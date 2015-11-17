@@ -1,43 +1,41 @@
 <?php
-	
+include('simple_html_dom.php');	
+
 $url = "http://www.ishadowsocks.com"; //URL
+// get DOM from URL or file
+$html = file_get_html($url);
 
-$content = @file_get_contents($url) ;
-//echo $content;
-$start_pos = stripos($content,'<!-- Free Shadowsocks Section -->') ;
-//var_dump($start_pos);
-$end_pos = stripos( $content,'<!-- Provider list Section -->') ;
-//var_dump($end_pos) ;
+$rows = $resultArray = array() ;
 
-$substr = substr($content, $start_pos,$end_pos-$start_pos) ;
-
-$tmp_str = strip_tags($substr);
-
-$tmp_arr = explode(':', str_replace(' ', '',$tmp_str));
-//
-unset($tmp_arr[0]) ;
-unset($tmp_arr[5]) ;
-unset($tmp_arr[10]) ;
-unset($tmp_arr[15]) ;
-
-
-$all_arr = array_chunk(array_values($tmp_arr),4 );
-//print_r($all_arr) ;
-$result_arr = array() ;
-foreach ($all_arr as $all_key=>$arr_value) {
-
-	list($server_addr,$server_port,$password,$method) = $arr_value ;	
+foreach($html->find('section#free div.container div.row div.col-lg-4') as $e){
+    $row = array();
+	 
+	$content = $e->children(0)->plaintext;  //server ip 
+	$row['server'] = ltrim(strstr(trim($content), ':'),':');
 	
-	$server_addr = trim(preg_replace('/([\x80-\xff][A|B|C]*)/i','',$server_addr)) ;
-	$server_port = trim(substr(preg_replace('/([\x80-\xff][A|B|C]*)/i','',$server_port),0,-1)) ;
-	$password = trim(preg_replace('/([\x80-\xff][A|B|C]*)/i','',$password)) ;
-	$method = trim(preg_replace('/([\x80-\xff][A|B|C]*)/i','',$method)) ;
+	$content = $e->children(1)->plaintext; //server port
+	$row['server_port'] = ltrim(strstr(trim($content), ':'),':');
 
-	$result_arr[$all_key]['server'] = $server_addr;
-	$result_arr[$all_key]['server_port'] = (int)$server_port ;
-	$result_arr[$all_key]['password'] = $password ;
-	$result_arr[$all_key]['method'] = $method ;
+	$content = $e->children(2)->plaintext;  //password
+	$row['password'] = ltrim(strstr(trim($content), ':'),':');
+
+	$content = $e->children(3)->plaintext; //method
+	$row['method'] = ltrim(strstr(trim($content), ':'),':');
+
+	$row['remarks'] = $row['server'];  //mark
+
+ 	$rows[] = $row ;
 }
-
-print_r($result_arr);
-file_put_contents('/etc/shadowsocks.json', json_encode($result_arr)) ;
+$resultArray['configs'] = $rows ;
+$resultArray['strategy'] = 'com.shadowsocks.strategy.ha' ;
+$resultArray['index'] = -1 ;
+$resultArray['global'] = false ;
+$resultArray['enabled'] = true ;
+$resultArray['shareOverLan'] = true ;
+$resultArray['isDefault'] = false ;
+$resultArray['localPort'] = 1080 ;
+	$resultArray['pacUrl'] = null ;
+$resultArray['useOnlinePac'] = false ;
+$resultArray['availabilityStatistics'] = false ;
+//echo json_encode($resultArray);
+file_put_contents('gui-config.json', json_encode($resultArray)) ;
