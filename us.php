@@ -1,5 +1,9 @@
 <?php
+ini_set("display_errors", "On");
+error_reporting(E_ALL | E_STRICT);
+
 include('simple_html_dom.php');	
+include('json_format.php');	
 
 $url = "http://www.ishadowsocks.com"; //URL
 // get DOM from URL or file
@@ -26,16 +30,20 @@ foreach($html->find('section#free div.container div.row div.col-lg-4') as $e){
 
  	$rows[] = $row ;
 }
-$resultArray['configs'] = $rows ;
-$resultArray['strategy'] = 'com.shadowsocks.strategy.ha' ;
-$resultArray['index'] = -1 ;
-$resultArray['global'] = false ;
-$resultArray['enabled'] = true ;
-$resultArray['shareOverLan'] = true ;
-$resultArray['isDefault'] = false ;
-$resultArray['localPort'] = 1080 ;
-	$resultArray['pacUrl'] = null ;
-$resultArray['useOnlinePac'] = false ;
-$resultArray['availabilityStatistics'] = false ;
-//echo json_encode($resultArray);
-file_put_contents('gui-config.json', json_encode($resultArray)) ;
+//print_r($rows) ;
+$single=array() ;
+$find = str_replace('.php', '', basename(__FILE__));
+foreach ($rows as $key => $row) {
+	if(strpos($row['remarks'],$find)!==false){
+		$single = $row ;
+	}
+}
+//print_r($single) ;
+//echo json_encode($single);
+$single['local_port']=1080 ;
+$single['local_address'] = '0.0.0.0' ;
+$single['timeout'] = 300 ;
+
+header('content-type:application/json;charset=utf8');
+echo jsonFormat($single);
+
